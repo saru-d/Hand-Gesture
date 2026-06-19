@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hand Gesture Recognition System</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="style.css">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+</head>
+<body>
+ 
+<div class="bg-grid"></div>
+<div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div>
+<div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+<canvas id="particleCanvas"></canvas>
+<div id="loadBar"></div>
+ 
+<!-- ══════════ HOME ══════════ -->
+<div class="page" id="homePage">
+  <div class="home-inner">
+    <div class="hand-anim">🖐️</div>
+    <div class="home-badge">DUAL HAND . DRAW . FUN</div>
+    <h1 class="home-title">
+      <span class="l1">Hand Gesture</span>
+      <span class="l2">Recognition System</span>
+    </h1>
+    <p class="home-sub"><span id="typedText"></span><span class="cblink"></span></p>
+    <div class="scan-line"></div>
+    <div class="home-btns">
+      <button class="btn btn-outline" onclick="showAbout()">◈ View More</button>
+    </div>
+  </div>
+</div>
+ 
+<!-- ══════════ ABOUT ══════════ -->
+<div class="page hidden" id="aboutPage">
+  <div class="about-inner">
+    <div class="page-nav">
+      <button class="back-btn" onclick="goHome()">← Back</button>
+      <span class="ptsm">ABOUT THE PROJECT</span>
+    </div>
+    <div class="about-hero">
+      <h2>Hand Gesture Recognition System</h2>
+      <p>A real-time, camera-powered drawing canvas with <strong>dual hand tracking</strong> and a full rainbow color wheel. Control tools, colors, and drawing — no mouse, no touch.</p>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-num">21</div><div class="stat-lbl">Landmarks / Hand</div></div>
+      <div class="stat-card"><div class="stat-num">2</div><div class="stat-lbl">Hands Tracked</div></div>
+      <div class="stat-card"><div class="stat-num">30+</div><div class="stat-lbl">FPS Detection</div></div>
+    </div>
+    <div class="feat-grid">
+      <div class="feat-card"><div class="fi">🖐️🤚</div><h3>Dual Hand Tracking</h3><p>Both hands tracked and shown simultaneously with unique colored cursors — cyan for Hand 1, orange for Hand 2.</p></div>
+      <div class="feat-card"><div class="fi">🎨</div><h3>Rainbow Vertical Color Bar</h3><p>Full HSL spectrum color bar identical to the classic artist's wheel. Hover your finger on it to pick any color.</p></div>
+      <div class="feat-card"><div class="fi">✏️</div><h3>Drawing Tools</h3><p>Pencil, Eraser, Paint Fill, Text. Pinch thumb + index to draw. Hover two fingers over tool buttons to switch.</p></div>
+      <div class="feat-card"><div class="fi">🔷</div><h3>6 Shapes</h3><p>Rectangle, Circle, Triangle, Line, Arrow, Star — pinch-drag to place and resize any shape in your chosen color.</p></div>
+      <div class="feat-card"><div class="fi">🧠</div><h3>Smooth Interpolation</h3><p>Exponential smoothing on all cursor positions — fluid, jitter-free motion that feels natural like real drawing.</p></div>
+      <div class="feat-card"><div class="fi">⚡</div><h3>100% In-Browser</h3><p>MediaPipe WASM runs entirely on your device. No server, no upload, no install — just open and draw.</p></div>
+    </div>
+    <div class="gesture-table">
+      <h3>GESTURE REFERENCE</h3>
+      <div class="gest-row"><span class="gi">☝️</span><span class="gname">Index Up</span><span class="gdesc">Move cursor on canvas (smoothly interpolated)</span></div>
+      <div class="gest-row"><span class="gi">🤏</span><span class="gname">Pinch</span><span class="gdesc">Draw lines / place shapes — thumb touches index tip</span></div>
+      <div class="gest-row"><span class="gi">✌️</span><span class="gname">Peace / Two Fingers</span><span class="gdesc">Hover over tools or color wheel — hold 0.8s to activate</span></div>
+      <div class="gest-row"><span class="gi">🖐️</span><span class="gname">Open Palm</span><span class="gdesc">Neutral — moves cursor without drawing</span></div>
+      <div class="gest-row"><span class="gi">✊</span><span class="gname">Fist (hold 1.0s)</span><span class="gdesc">Clears the entire canvas</span></div>
+    </div>
+    <div class="about-cta">
+      <p>Allow camera access and start drawing with both hands.</p>
+      <button class="btn btn-solid" onclick="startApp()">⚡ Launch Drawing App</button>
+    </div>
+  </div>
+</div>
+ 
+<!-- ══════════ APP ══════════ -->
+<div class="page hidden" id="appPage">
+  <div class="app-header">
+    <span class="app-logo">🖐 Hand Gesture Recognition System</span>
+    <div class="app-header-right">
+      <span class="cam-badge" id="camBadge">◉ CAM OFF</span>
+      <button class="home-back" onclick="goHome()">⌂ Home</button>
+    </div>
+  </div>
+ 
+  <!-- Tools left -->
+  <div class="left-panel">
+    <div class="panel-box">
+      <div class="panel-lbl">Tools</div>
+      <button class="tbtn active" id="btn-pencil"  onclick="setTool('pencil',this)">✏️<span class="tl">Pencil</span></button>
+      <button class="tbtn"        id="btn-eraser"  onclick="setTool('eraser',this)">🧽<span class="tl">Eraser</span></button>
+      <button class="tbtn"        id="btn-paint"   onclick="setTool('paint',this)">🎨<span class="tl">Paint</span></button>
+    </div>
+    <div class="panel-box">
+      <div class="panel-lbl">Shapes</div>
+      <button class="tbtn" id="btn-rect"     onclick="setTool('rect',this)">◻ & ▭<span class="tl">Square & Rectangle</span></button>
+      <button class="tbtn" id="btn-circle"   onclick="setTool('circle',this)">○<span class="tl">Circle</span></button>
+      <button class="tbtn" id="btn-triangle" onclick="setTool('triangle',this)">△<span class="tl">Triangle</span></button>
+      <button class="tbtn" id="btn-line"     onclick="setTool('line',this)">╱<span class="tl">Line</span></button>
+      <button class="tbtn" id="btn-arrow"    onclick="setTool('arrow',this)">→<span class="tl">Arrow</span></button>
+      <button class="tbtn" id="btn-star"     onclick="setTool('star',this)">★<span class="tl">Star</span></button>
+    </div>
+  </div>
+ 
+  <!-- Canvas -->
+  <div class="canvas-wrap" id="canvasWrap">
+    <video id="camBg" autoplay playsinline muted></video>
+    <canvas id="drawCanvas"></canvas>
+    <canvas id="handCanvas"></canvas>
+    <!-- Dual cursors -->
+    <div class="dot-trail" id="trail0"></div>
+    <div class="dot-trail" id="trail1"></div>
+    <div class="fdot" id="dot0"></div>
+    <div class="fdot" id="dot1"></div>
+    <div class="canvas-hint" id="canvasHint">
+      <span class="chi">🖐️🤚</span>
+      <p>Show both hands to the camera</p>
+    </div>
+    <div id="gestureToast"></div>
+    <div id="handInfo">
+      <div class="hi0">Hand 1 (cyan): —</div>
+      <div class="hi1">Hand 2 (orange): —</div>
+    </div>
+    <div id="miniCam">
+      <span class="mini-lbl">● LIVE</span>
+      <video id="miniVideo" autoplay playsinline muted></video>
+      <canvas id="miniCanvas"></canvas>
+    </div>
+  </div>
+ 
+  <!-- Right: rainbow wheel -->
+  <div class="right-panel">
+    <div class="pal-title">Color Bar</div>
+    <div class="bar-wrap">
+      <canvas id="colorBar" width="50" height="300"></canvas>
+    </div>
+    <div class="color-preview-wrap">
+      <div class="color-preview" id="colorPreview" style="background:#ff0000;box-shadow:0 0 14px #ff0000"></div>
+      <div class="color-hex" id="colorHex">#ff0000</div>
+    </div>
+  </div>
+ 
+  <div class="status-bar">
+    <div class="sdot" id="sdot"></div>
+    <span id="sStatus">CAMERA OFF</span>
+    <span>TOOL:<span class="stag" id="sTool"> PENCIL</span></span>
+    <span>COLOR:<span class="stag" id="sColor" style="color:#ff0000"> ■ #ff0000</span></span>
+    <span>H1:<span class="stag" id="sG0"> —</span></span>
+    <span>H2:<span class="stag2" id="sG1"> —</span></span>
+  </div>
+</div>
+<script src="script.js"></script>
+
+</body>
+</html>
